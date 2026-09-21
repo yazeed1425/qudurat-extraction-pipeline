@@ -136,6 +136,21 @@ one of them (commonly by letting your eye drift to an adjacent cell) — look ag
 those two cells individually and correct the one that doesn't match what is actually printed there.
 - "explanation" is any explanation/solution text present on the page for that question (e.g. the \
 "الحل:" line), with its math converted to LaTeX; use an empty string if none is present.
+- GEOMETRIC/VISUAL DIAGRAMS: some questions depend on an actual picture — a geometric figure, a \
+chart, a graph, or a diagram made of shapes (e.g. a circle divided into labeled wedges/sectors, a \
+grid, a tree) — as opposed to the plain bordered value-table row/column pattern covered above. \
+When a question depends on this kind of figure:
+  1. Set "has_image" = true.
+  2. Still transcribe as much of the figure's content into "question_text" as you can in words —
+     every number/label you can read and, if visually obvious, their spatial arrangement (e.g.
+     "دائرة مقسمة إلى 7 قطاعات تحتوي على الأرقام: 4، 8، 11، 13، 43، 19، 17، وقطاع بقيمة مجهولة س،
+     بالترتيب حول الدائرة"). Do this even though you know the description will be imperfect — a
+     partial description is far more useful downstream than an empty one, and the image itself is
+     kept alongside for anyone who needs to see it directly.
+  3. Still attempt the self-correction protocol below using the figure's actual visual pattern
+     (not just the transcribed words) to solve it, same as any other question.
+- For every other question (a plain equation/text question, or one with only the value-mapping \
+table style already covered above), "has_image" = false.
 - Only skip a question if it is genuinely incomplete or incoherent: it has an options grid but no \
 question statement above it, a question statement with no options grid before the page ends, or \
 (after ignoring watermarks) its text/numbers are still self-contradictory or nonsensical, which \

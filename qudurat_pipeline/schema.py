@@ -35,6 +35,7 @@ class QudurateQuestion(BaseModel):
     mathematically_verified: bool = False
     confidence_score: float = 0.0
     status: Status = "pending_review"
+    has_image: bool = False
 
     @field_validator("correct_answer")
     @classmethod
@@ -82,6 +83,7 @@ class QudurateQuestion(BaseModel):
             "mathematically_verified": self.mathematically_verified,
             "confidence_score": self.confidence_score,
             "status": self.status,
+            "has_image": self.has_image,
             "embedding": embedding,
         }
 
@@ -129,6 +131,7 @@ PAGE_EXTRACTION_JSON_SCHEMA = {
                             "enum": ["A", "B", "C", "D", None],
                         },
                         "explanation": {"type": "string"},
+                        "has_image": {"type": "boolean"},
                     },
                     "required": [
                         "skill",
@@ -141,6 +144,7 @@ PAGE_EXTRACTION_JSON_SCHEMA = {
                         "confidence_score",
                         "correct_answer",
                         "explanation",
+                        "has_image",
                     ],
                     "additionalProperties": False,
                 },

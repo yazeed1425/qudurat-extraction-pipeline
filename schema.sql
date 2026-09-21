@@ -23,6 +23,7 @@ create table qudurat_quant_questions (
     confidence_score real not null default 0 check (confidence_score >= 0 and confidence_score <= 1),
     status text not null default 'pending_review'
         check (status in ('pending_review', 'approved', 'rejected')),
+    has_image boolean not null default false,
     embedding vector(3072),  -- gemini-embedding-001; change to 1536 if you switch back to OpenAI
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
@@ -78,6 +79,7 @@ returns table (
     explanation text,
     mathematically_verified boolean,
     confidence_score real,
+    has_image boolean,
     similarity float
 )
 language sql stable
@@ -94,6 +96,7 @@ as $$
         q.explanation,
         q.mathematically_verified,
         q.confidence_score,
+        q.has_image,
         1 - (q.embedding <=> query_embedding) as similarity
     from qudurat_quant_questions q
     where q.status = 'approved'

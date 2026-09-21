@@ -113,6 +113,7 @@ def fetch_questions(
     verified_filter: Optional[bool],
     min_confidence: float,
     skill_filter: str,
+    has_image_filter: Optional[bool],
     limit: int,
     offset: int,
 ) -> tuple[list[dict], int]:
@@ -131,6 +132,8 @@ def fetch_questions(
         params["mathematically_verified"] = f"eq.{str(verified_filter).lower()}"
     if skill_filter.strip():
         params["skill"] = f"eq.{skill_filter.strip()}"
+    if has_image_filter is not None:
+        params["has_image"] = f"eq.{str(has_image_filter).lower()}"
 
     headers = {**_headers(), "Prefer": "count=exact"}
     response = requests.get(url, headers=headers, params=params, timeout=30)
@@ -231,6 +234,8 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
         header = f"{badge} **{status}** — {row.get('skill','')} / {row.get('sub_skill','')} — page {row.get('source_page')}"
         if not verified or confidence < 0.95:
             header += "  ⚠️ **needs review** (unverified or low confidence)"
+        if row.get("has_image"):
+            header += "  🖼️ **relies on a diagram** (check the source image, text alone may be incomplete)"
         st.markdown(header)
         st.caption(f"verified={verified}  confidence={confidence:.2f}  id={row_id}")
 
@@ -352,6 +357,8 @@ def main() -> None:
     verified_filter = {"All": None, "True": True, "False": False}[verified_choice]
     min_confidence = st.sidebar.slider("Minimum confidence score", 0.0, 1.0, 0.0, 0.01)
     skill_filter = st.sidebar.text_input("Skill (exact match, optional)", value="")
+    has_image_choice = st.sidebar.selectbox("Relies on a diagram", ["All", "True", "False"])
+    has_image_filter = {"All": None, "True": True, "False": False}[has_image_choice]
 
     st.sidebar.divider()
     st.sidebar.subheader("Source rendering")
@@ -369,7 +376,13 @@ def main() -> None:
     page_size = 15
 
     rows, total = fetch_questions(
-        status_filter, verified_filter, min_confidence, skill_filter, page_size, st.session_state.offset
+        status_filter,
+        verified_filter,
+        min_confidence,
+        skill_filter,
+        has_image_filter,
+        page_size,
+        st.session_state.offset,
     )
 
     st.caption(f"{total} matching question(s)")
