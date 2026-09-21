@@ -1,0 +1,22 @@
+# Secrets
+.env
+
+# Third-party binary (download separately per README)
+poppler/
+
+# Source PDFs (third-party copyrighted test-prep material, not ours to publish)
+pdfs/*.pdf
+
+# Runtime state / outputs
+progress_*.txt
+dry_run_*.jsonl
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS/editor
+.DS_Store
