@@ -42,17 +42,22 @@ def _ensure_math_rendered(text: str) -> str:
     return "\n".join(wrapped_lines)
 
 
-def _rtl_markdown(text: str) -> None:
-    """Render as plain markdown so Streamlit's own $...$ -> KaTeX auto-rendering
-    still runs. NOTE: this deliberately does NOT wrap the text in an HTML <div>
-    (which would need unsafe_allow_html=True) — that bypasses Streamlit's KaTeX
-    preprocessing entirely, showing raw "$\\frac{4}{5}$" text instead of a
-    rendered fraction. It also deliberately does NOT set dir="rtl" — forcing
-    the browser's bidi algorithm on the whole line scrambles embedded LaTeX
-    into the wrong character order. Arabic already reads right-to-left on its
-    own via Unicode's per-character directionality without any of that, and
-    this keeps KaTeX working, which matters far more than block alignment."""
-    st.markdown(_ensure_math_rendered(text))
+def _rtl_markdown(text: str, key: str) -> None:
+    """Render as plain markdown (so Streamlit's own $...$ -> KaTeX rendering still
+    runs), inside a container CSS-targeted to flip to RTL block flow.
+
+    Earlier attempts wrapped the text itself in an HTML <div dir="rtl"> string,
+    which requires unsafe_allow_html=True — that bypasses Streamlit's KaTeX
+    preprocessing entirely (shows raw "$\\frac{4}{5}$" text) and/or scrambles
+    the raw character order before KaTeX ever sees it. Styling Streamlit's own
+    *container* after the fact avoids both: the content still goes through
+    normal st.markdown() untouched, KaTeX renders the math as its own inline
+    unit, and only the finished result's block flow direction changes — which
+    is exactly what makes a rendered KaTeX span sit correctly to the LEFT of
+    the Arabic sentence that leads it, instead of trailing after it.
+    """
+    with st.container(key=f"rtlblock_{key}"):
+        st.markdown(_ensure_math_rendered(text))
 
 
 RTL_FIELD_CSS = """
@@ -65,6 +70,10 @@ div[data-testid="stTextInput"] input[aria-label="C"],
 div[data-testid="stTextInput"] input[aria-label="D"],
 div[data-testid="stTextInput"] input[aria-label="skill"],
 div[data-testid="stTextInput"] input[aria-label="sub_skill"] {
+    text-align: right;
+}
+div[class*="st-key-rtlblock_"] {
+    direction: rtl;
     text-align: right;
 }
 </style>
@@ -244,7 +253,7 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
             q_text = st.text_area(
                 "question_text", value=row.get("question_text", ""), key=f"qt_{row_id}", height=90
             )
-            _rtl_markdown(q_text)  # live LaTeX preview (KaTeX), RTL-aware
+            _rtl_markdown(q_text, key=f"qt_{row_id}")  # live LaTeX preview (KaTeX), RTL-aware
 
             options = row.get("options") or {}
             oc1, oc2 = st.columns(2)
@@ -281,7 +290,7 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
                 explanation = st.text_area(
                     "explanation", value=row.get("explanation", ""), key=f"exp_{row_id}", height=80
                 )
-                _rtl_markdown(explanation)
+                _rtl_markdown(explanation, key=f"exp_{row_id}")
 
             b1, b2, b3 = st.columns(3)
             with b1:
