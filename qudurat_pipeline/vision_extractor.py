@@ -24,7 +24,13 @@ logger = logging.getLogger(__name__)
 # (multi-line explanations), so only the LaTeX-colliding escapes are repaired, and
 # only when followed by a letter (i.e. it looks like a command name, not a real
 # escape byte intentionally followed by that letter).
-_LATEX_ESCAPE_COLLISION = re.compile(r"\\([ftbr])(?=[a-zA-Z])")
+#
+# The leading (?<!\\) is required: without it, an ALREADY-correct "\\frac" (two
+# backslashes, properly escaped) gets its second backslash mistaken for a lone
+# unescaped one and "repaired" into "\\\frac" (three backslashes) — corrupting
+# good data instead of fixing bad data. It only matches a backslash that is not
+# itself preceded by another backslash, i.e. a genuinely single/lone one.
+_LATEX_ESCAPE_COLLISION = re.compile(r"(?<!\\)\\([ftbr])(?=[a-zA-Z])")
 
 
 def _repair_json_escapes(raw: str) -> str:

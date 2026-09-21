@@ -41,6 +41,35 @@ def _ensure_math_rendered(text: str) -> str:
             wrapped_lines.append(f"${line}$")
     return "\n".join(wrapped_lines)
 
+
+def _rtl_markdown(text: str) -> None:
+    """Render as plain markdown so Streamlit's own $...$ -> KaTeX auto-rendering
+    still runs. NOTE: this deliberately does NOT wrap the text in an HTML <div>
+    (which would need unsafe_allow_html=True) — that bypasses Streamlit's KaTeX
+    preprocessing entirely, showing raw "$\\frac{4}{5}$" text instead of a
+    rendered fraction. It also deliberately does NOT set dir="rtl" — forcing
+    the browser's bidi algorithm on the whole line scrambles embedded LaTeX
+    into the wrong character order. Arabic already reads right-to-left on its
+    own via Unicode's per-character directionality without any of that, and
+    this keeps KaTeX working, which matters far more than block alignment."""
+    st.markdown(_ensure_math_rendered(text))
+
+
+RTL_FIELD_CSS = """
+<style>
+textarea[aria-label="question_text"],
+textarea[aria-label="explanation"],
+div[data-testid="stTextInput"] input[aria-label="A"],
+div[data-testid="stTextInput"] input[aria-label="B"],
+div[data-testid="stTextInput"] input[aria-label="C"],
+div[data-testid="stTextInput"] input[aria-label="D"],
+div[data-testid="stTextInput"] input[aria-label="skill"],
+div[data-testid="stTextInput"] input[aria-label="sub_skill"] {
+    text-align: right;
+}
+</style>
+"""
+
 st.set_page_config(page_title="Qudurat Review Dashboard", layout="wide")
 
 RENDER_DPI = 300  # must match the DPI extract_pipeline.py used, so box_index still lines up
@@ -215,7 +244,7 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
             q_text = st.text_area(
                 "question_text", value=row.get("question_text", ""), key=f"qt_{row_id}", height=90
             )
-            st.markdown(_ensure_math_rendered(q_text))  # live LaTeX preview (KaTeX)
+            _rtl_markdown(q_text)  # live LaTeX preview (KaTeX), RTL-aware
 
             options = row.get("options") or {}
             oc1, oc2 = st.columns(2)
@@ -252,7 +281,7 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
                 explanation = st.text_area(
                     "explanation", value=row.get("explanation", ""), key=f"exp_{row_id}", height=80
                 )
-                st.markdown(_ensure_math_rendered(explanation))
+                _rtl_markdown(explanation)
 
             b1, b2, b3 = st.columns(3)
             with b1:
@@ -297,6 +326,7 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
 
 
 def main() -> None:
+    st.markdown(RTL_FIELD_CSS, unsafe_allow_html=True)
     st.title("📝 Qudurat Review Dashboard")
 
     try:
