@@ -149,8 +149,14 @@ When a question depends on this kind of figure:
      kept alongside for anyone who needs to see it directly.
   3. Still attempt the self-correction protocol below using the figure's actual visual pattern
      (not just the transcribed words) to solve it, same as any other question.
+  4. Set "diagram_bbox" to a tight bounding box around JUST the figure itself — not the question
+     text, not the options grid, not the solution — as fractions of this image's width/height:
+     x1,y1 is the figure's top-left corner and x2,y2 its bottom-right corner, each a number from
+     0.0 (left/top edge of the whole image) to 1.0 (right/bottom edge). This is used to crop out a
+     second, diagram-only image, so be as tight as you can while still including the whole figure.
 - For every other question (a plain equation/text question, or one with only the value-mapping \
-table style already covered above), "has_image" = false.
+table style already covered above), "has_image" = false and "diagram_bbox" doesn't matter (leave \
+it as the default full-image box).
 - Only skip a question if it is genuinely incomplete or incoherent: it has an options grid but no \
 question statement above it, a question statement with no options grid before the page ends, or \
 (after ignoring watermarks) its text/numbers are still self-contradictory or nonsensical, which \

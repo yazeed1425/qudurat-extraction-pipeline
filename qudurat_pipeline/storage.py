@@ -38,14 +38,24 @@ def _safe_path_segment(text: str) -> str:
 
 
 def upload_question_image(
-    settings: Settings, image: Image.Image, skill: str, source_pdf: str, page: int, box_index: int | None
+    settings: Settings,
+    image: Image.Image,
+    skill: str,
+    source_pdf: str,
+    page: int,
+    box_index: int | None,
+    suffix: str = "",
 ) -> str | None:
-    """Upload a box image and return its public URL, or None if the upload fails
-    (a storage hiccup should never take down the whole extraction run — the
-    question is still saved, just without an image_url for this one)."""
+    """Upload a box (or diagram-crop) image and return its public URL, or None if
+    the upload fails (a storage hiccup should never take down the whole
+    extraction run — the question is still saved, just without this URL).
+
+    `suffix` (e.g. "_diagram") distinguishes a diagram-only crop from the full
+    box image for the same question, so the two don't overwrite each other.
+    """
     stem = _safe_path_segment(source_pdf.rsplit(".", 1)[0])
     box_part = f"box{box_index}" if box_index is not None else "full"
-    path = f"{_safe_path_segment(skill)}/{stem}/page{page}_{box_part}.png"
+    path = f"{_safe_path_segment(skill)}/{stem}/page{page}_{box_part}{suffix}.png"
 
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")

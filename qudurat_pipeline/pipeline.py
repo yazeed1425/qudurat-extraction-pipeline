@@ -15,12 +15,29 @@ from .checkpoint import Checkpoint
 from .config import SUPABASE_TABLE, Settings
 from .embeddings import get_embedding
 from .pdf_utils import iter_pdf_page_images, split_image_vertically
-from .schema import QudurateQuestion
+from .schema import DiagramBBox, QudurateQuestion
 from .storage import upload_question_image
 from .supabase_client import insert_rows
 from .vision_extractor import extract_questions_from_page
 
 logger = logging.getLogger(__name__)
+
+MIN_DIAGRAM_CROP_PX = 20  # a crop smaller than this in either dimension is noise, not a figure
+
+
+def _crop_diagram(image: Image.Image, bbox: DiagramBBox) -> Optional[Image.Image]:
+    """Crop the diagram-only region out of a box image using the model-reported
+    normalized bounding box. Returns None for a degenerate/near-full-image box
+    (nothing meaningfully different to crop) or a too-small result."""
+    if (bbox.x1, bbox.y1, bbox.x2, bbox.y2) == (0.0, 0.0, 1.0, 1.0):
+        return None
+
+    width, height = image.size
+    left, top = int(bbox.x1 * width), int(bbox.y1 * height)
+    right, bottom = int(bbox.x2 * width), int(bbox.y2 * height)
+    if right - left < MIN_DIAGRAM_CROP_PX or bottom - top < MIN_DIAGRAM_CROP_PX:
+        return None
+    return image.crop((left, top, right, bottom))
 
 
 def _dedupe_questions(questions: list[QudurateQuestion]) -> list[QudurateQuestion]:
@@ -193,6 +210,17 @@ def process_pdf(
                         question.image_url = upload_question_image(
                             settings, source_image, skill, pdf_path.name, page_number, question.box_index
                         )
+                        diagram_crop = _crop_diagram(source_image, question.diagram_bbox)
+                        if diagram_crop is not None:
+                            question.diagram_image_url = upload_question_image(
+                                settings,
+                                diagram_crop,
+                                skill,
+                                pdf_path.name,
+                                page_number,
+                                question.box_index,
+                                suffix="_diagram",
+                            )
 
             rows = []
             for question in questions:

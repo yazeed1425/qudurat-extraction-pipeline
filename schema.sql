@@ -24,7 +24,8 @@ create table qudurat_quant_questions (
     status text not null default 'pending_review'
         check (status in ('pending_review', 'approved', 'rejected')),
     has_image boolean not null default false,
-    image_url text,  -- set only when has_image is true; see qudurat_pipeline/storage.py
+    image_url text,  -- full box image, set only when has_image is true; see qudurat_pipeline/storage.py
+    diagram_image_url text,  -- diagram-only crop, cropped from image_url via the model's reported bbox
     embedding vector(3072),  -- gemini-embedding-001; change to 1536 if you switch back to OpenAI
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
@@ -88,6 +89,7 @@ returns table (
     confidence_score real,
     has_image boolean,
     image_url text,
+    diagram_image_url text,
     similarity float
 )
 language sql stable
@@ -106,6 +108,7 @@ as $$
         q.confidence_score,
         q.has_image,
         q.image_url,
+        q.diagram_image_url,
         1 - (q.embedding <=> query_embedding) as similarity
     from qudurat_quant_questions q
     where q.status = 'approved'

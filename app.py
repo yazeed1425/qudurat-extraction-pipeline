@@ -257,7 +257,10 @@ def render_question_card(row: dict, table: str, pdf_dir: str, poppler_path: str)
                 # isn't on this machine, and it's what a remote RAG consumer
                 # actually sees too.
                 st.image(image_url, use_container_width=True)
-                st.caption("🖼️ stored diagram image")
+                st.caption("🖼️ full question (stored)")
+                if row.get("diagram_image_url"):
+                    st.image(row["diagram_image_url"], use_container_width=True)
+                    st.caption("🔺 diagram only (cropped from the above)")
             else:
                 try:
                     image = render_source_image(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 Difficulty = Literal["easy", "medium", "hard"]
 Status = Literal["pending_review", "approved", "rejected"]
@@ -17,6 +17,31 @@ class QuestionOptions(BaseModel):
     B: str = ""
     C: str = ""
     D: str = ""
+
+
+class DiagramBBox(BaseModel):
+    """Normalized (0-1) bounding box of just the diagram/figure within the box
+    image — only meaningful when has_image is true. Used to crop a second,
+    diagram-only image so a reviewer/RAG consumer can see just the figure
+    without the surrounding question text and option grid."""
+
+    x1: float = 0.0
+    y1: float = 0.0
+    x2: float = 1.0
+    y2: float = 1.0
+
+    @field_validator("x1", "y1", "x2", "y2")
+    @classmethod
+    def _clamp_unit(cls, v: float) -> float:
+        return max(0.0, min(1.0, v))
+
+    @model_validator(mode="after")
+    def _fix_degenerate_box(self) -> "DiagramBBox":
+        # A model-reported box with x2<=x1 or y2<=y1 is unusable for cropping;
+        # fall back to the whole image rather than crop to a zero-size region.
+        if self.x2 <= self.x1 or self.y2 <= self.y1:
+            self.x1, self.y1, self.x2, self.y2 = 0.0, 0.0, 1.0, 1.0
+        return self
 
 
 class QudurateQuestion(BaseModel):
@@ -36,7 +61,9 @@ class QudurateQuestion(BaseModel):
     confidence_score: float = 0.0
     status: Status = "pending_review"
     has_image: bool = False
-    image_url: Optional[str] = None  # set after extraction, only when has_image is true
+    diagram_bbox: DiagramBBox = DiagramBBox()  # only meaningful when has_image is true
+    image_url: Optional[str] = None  # full box image, set after extraction, only when has_image
+    diagram_image_url: Optional[str] = None  # diagram-only crop, set after extraction
 
     @field_validator("correct_answer")
     @classmethod
@@ -86,6 +113,7 @@ class QudurateQuestion(BaseModel):
             "status": self.status,
             "has_image": self.has_image,
             "image_url": self.image_url,
+            "diagram_image_url": self.diagram_image_url,
             "embedding": embedding,
         }
 
@@ -134,6 +162,17 @@ PAGE_EXTRACTION_JSON_SCHEMA = {
                         },
                         "explanation": {"type": "string"},
                         "has_image": {"type": "boolean"},
+                        "diagram_bbox": {
+                            "type": "object",
+                            "properties": {
+                                "x1": {"type": "number"},
+                                "y1": {"type": "number"},
+                                "x2": {"type": "number"},
+                                "y2": {"type": "number"},
+                            },
+                            "required": ["x1", "y1", "x2", "y2"],
+                            "additionalProperties": False,
+                        },
                     },
                     "required": [
                         "skill",
@@ -146,6 +185,7 @@ PAGE_EXTRACTION_JSON_SCHEMA = {
                         "confidence_score",
                         "correct_answer",
                         "explanation",
+                        "diagram_bbox",
                         "has_image",
                     ],
                     "additionalProperties": False,
