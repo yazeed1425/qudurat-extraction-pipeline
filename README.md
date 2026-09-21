@@ -79,9 +79,23 @@ Each skill gets a `progress_<skill>.txt` file listing completed page numbers. Re
 same command skips pages already processed; a page that fails is left unmarked so it retries
 on the next run.
 
+## Adding another skill/section with its own table
+
+`extract_pipeline.py` always writes to `qudurat_quant_questions`. To extract a different
+skill/section into its **own** Supabase table (e.g. `المقارنات`) instead of adding a flag to that
+script, add a small dedicated entrypoint the same way `extract_pipeline_المقارنات.py` does:
+
+1. Create the table in Supabase with the same columns as `qudurat_quant_questions` in `schema.sql`
+   (swap the table name; skip the `ivfflat` index if the embedding model's dimensions exceed 2000).
+2. Copy `extract_pipeline_المقارنات.py`, changing `SKILL`, `TABLE`, and `DEFAULT_PDF` at the top.
+
+`qudurat_pipeline.pipeline.process_pdf()` and `supabase_client.insert_rows()` both take an
+optional `table` parameter for exactly this — `extract_pipeline.py` itself never needs to change.
+
 ## Project layout
 
-- `extract_pipeline.py` — extraction CLI entrypoint.
+- `extract_pipeline.py` — extraction CLI entrypoint (writes to `qudurat_quant_questions`).
+- `extract_pipeline_المقارنات.py` — same pipeline, writes to the separate `المقارنات` table.
 - `app.py` — Streamlit human-in-the-loop review dashboard.
 - `qudurat_pipeline/config.py` — env/settings loading.
 - `qudurat_pipeline/schema.py` — Pydantic model, status logic, and the JSON schema handed to the model.
