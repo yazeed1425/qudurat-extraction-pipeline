@@ -36,6 +36,7 @@ class QudurateQuestion(BaseModel):
     confidence_score: float = 0.0
     status: Status = "pending_review"
     has_image: bool = False
+    image_url: Optional[str] = None  # set after extraction, only when has_image is true
 
     @field_validator("correct_answer")
     @classmethod
@@ -84,6 +85,7 @@ class QudurateQuestion(BaseModel):
             "confidence_score": self.confidence_score,
             "status": self.status,
             "has_image": self.has_image,
+            "image_url": self.image_url,
             "embedding": embedding,
         }
 

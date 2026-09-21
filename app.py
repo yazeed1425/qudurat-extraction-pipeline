@@ -250,17 +250,26 @@ def render_question_card(row: dict, table: str, pdf_dir: str, poppler_path: str)
         col_img, col_form = st.columns([1, 1.4])
 
         with col_img:
-            try:
-                image = render_source_image(
-                    pdf_dir, row.get("source_pdf", ""), row["source_page"], row.get("box_index"), poppler_path
-                )
-            except Exception as exc:  # pdf2image / poppler failure
-                image = None
-                st.caption(f"(couldn't render source image: {exc})")
-            if image is not None:
-                st.image(image, use_container_width=True)
+            image_url = row.get("image_url")
+            if image_url:
+                # Stored at extraction time (has_image=true questions only) —
+                # prefer it over a local re-render: it works even if the PDF
+                # isn't on this machine, and it's what a remote RAG consumer
+                # actually sees too.
+                st.image(image_url, use_container_width=True)
+                st.caption("🖼️ stored diagram image")
             else:
-                st.info("Source image unavailable (PDF not found at this path).")
+                try:
+                    image = render_source_image(
+                        pdf_dir, row.get("source_pdf", ""), row["source_page"], row.get("box_index"), poppler_path
+                    )
+                except Exception as exc:  # pdf2image / poppler failure
+                    image = None
+                    st.caption(f"(couldn't render source image: {exc})")
+                if image is not None:
+                    st.image(image, use_container_width=True)
+                else:
+                    st.info("Source image unavailable (PDF not found at this path).")
 
         with col_form:
             q_text = st.text_area(

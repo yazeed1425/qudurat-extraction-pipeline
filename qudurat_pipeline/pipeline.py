@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 from openai import OpenAI
+from PIL import Image
 
 from .box_detector import detect_question_boxes
 from .checkpoint import Checkpoint
@@ -15,6 +16,7 @@ from .config import SUPABASE_TABLE, Settings
 from .embeddings import get_embedding
 from .pdf_utils import iter_pdf_page_images, split_image_vertically
 from .schema import QudurateQuestion
+from .storage import upload_question_image
 from .supabase_client import insert_rows
 from .vision_extractor import extract_questions_from_page
 
@@ -130,6 +132,10 @@ def process_pdf(
         try:
             question_boxes = detect_question_boxes(image)
             questions: list[QudurateQuestion] = []
+            # Keyed by box_index (or None for the whole-page fallback), so a
+            # has_image=true question can be re-matched to the exact image it
+            # came from further down, without re-running box detection.
+            source_images: dict[Optional[int], Image.Image] = {}
 
             if question_boxes is not None:
                 # Regular grid-table template: each crop is one complete question,
@@ -138,6 +144,7 @@ def process_pdf(
                 # list the same question twice inside its "questions" array.
                 logger.debug("Page %d: detected %d question box(es)", page_number, len(question_boxes))
                 for box_idx, box_image in enumerate(question_boxes):
+                    source_images[box_idx] = box_image
                     questions.extend(
                         extract_questions_from_page(
                             client,
@@ -157,6 +164,9 @@ def process_pdf(
                 # Fallback for pages that don't match the regular grid-table
                 # template (diagrams, essay-style layout, etc.): split into
                 # overlapping strips instead of sending the whole page at once.
+                # box_index is always None here, so the whole page is this
+                # branch's "source image" for any has_image=true question.
+                source_images[None] = image
                 page_strips = split_image_vertically(image, num_strips=strips)
                 for strip in page_strips:
                     questions.extend(
@@ -175,6 +185,14 @@ def process_pdf(
                 questions = _filter_malformed_questions(questions, page_number)
                 if len(page_strips) > 1:
                     questions = _dedupe_questions(questions)
+
+            for question in questions:
+                if question.has_image and not dry_run:
+                    source_image = source_images.get(question.box_index)
+                    if source_image is not None:
+                        question.image_url = upload_question_image(
+                            settings, source_image, skill, pdf_path.name, page_number, question.box_index
+                        )
 
             rows = []
             for question in questions:
