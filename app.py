@@ -233,7 +233,7 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
                     )
                 )
 
-            fc1, fc2 = st.columns(2)
+            fc1, fc2, fc3 = st.columns(3)
             with fc1:
                 answer_options = ["(none)", "A", "B", "C", "D"]
                 current_answer = row.get("correct_answer") or "(none)"
@@ -245,6 +245,8 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
                 )
             with fc2:
                 skill = st.text_input("skill", value=row.get("skill", ""), key=f"skill_{row_id}")
+            with fc3:
+                sub_skill = st.text_input("sub_skill", value=row.get("sub_skill", ""), key=f"subskill_{row_id}")
 
             with st.expander("explanation"):
                 explanation = st.text_area(
@@ -267,6 +269,7 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
                     "options": new_options,
                     "correct_answer": None if correct_answer == "(none)" else correct_answer,
                     "skill": skill,
+                    "sub_skill": sub_skill,
                     "explanation": explanation,
                     "status": "approved",
                 }
