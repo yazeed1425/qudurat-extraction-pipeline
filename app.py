@@ -8,6 +8,7 @@ Run with:
 from __future__ import annotations
 
 import re
+import urllib.parse
 from pathlib import Path
 from typing import Optional
 
@@ -19,6 +20,11 @@ from pdf2image import convert_from_path
 from qudurat_pipeline.box_detector import detect_question_boxes
 from qudurat_pipeline.config import Settings, SUPABASE_TABLE
 from qudurat_pipeline.embeddings import get_embedding
+
+# Known tables this dashboard can browse. Add an entry here whenever a new
+# dedicated extract_pipeline_<skill>.py script starts writing to its own table
+# (see README's "Adding another skill/section with its own table" section).
+KNOWN_TABLES = [SUPABASE_TABLE, "المقارنات"]
 
 _LATEX_MARKERS = re.compile(
     r"\\(frac|sqrt|times|div|cdot|left|right|Rightarrow|rightarrow|approx|neq|text)\b|\^\{|_\{|\^-?\d"
@@ -108,7 +114,13 @@ def _headers() -> dict:
     }
 
 
+def _table_url(table: str) -> str:
+    settings = get_settings()
+    return f"{settings.supabase_url}/rest/v1/{urllib.parse.quote(table, safe='')}"
+
+
 def fetch_questions(
+    table: str,
     status_filter: list[str],
     verified_filter: Optional[bool],
     min_confidence: float,
@@ -117,8 +129,7 @@ def fetch_questions(
     limit: int,
     offset: int,
 ) -> tuple[list[dict], int]:
-    settings = get_settings()
-    url = f"{settings.supabase_url}/rest/v1/{SUPABASE_TABLE}"
+    url = _table_url(table)
     params = {
         "select": "*",
         "order": "source_pdf.asc,source_page.asc,box_index.asc",
@@ -148,9 +159,8 @@ def fetch_questions(
     return response.json(), total
 
 
-def patch_question(row_id: str, fields: dict) -> None:
-    settings = get_settings()
-    url = f"{settings.supabase_url}/rest/v1/{SUPABASE_TABLE}"
+def patch_question(table: str, row_id: str, fields: dict) -> None:
+    url = _table_url(table)
     response = requests.patch(
         url,
         headers={**_headers(), "Prefer": "return=minimal"},
@@ -161,9 +171,8 @@ def patch_question(row_id: str, fields: dict) -> None:
     response.raise_for_status()
 
 
-def delete_question(row_id: str) -> None:
-    settings = get_settings()
-    url = f"{settings.supabase_url}/rest/v1/{SUPABASE_TABLE}"
+def delete_question(table: str, row_id: str) -> None:
+    url = _table_url(table)
     response = requests.delete(
         url,
         headers={**_headers(), "Prefer": "return=minimal"},
@@ -173,11 +182,10 @@ def delete_question(row_id: str) -> None:
     response.raise_for_status()
 
 
-def bulk_approve_high_confidence() -> int:
+def bulk_approve_high_confidence(table: str) -> int:
     """Approve every pending_review row that is verified and confidence >= 0.95.
     Returns the number of rows the server reports as affected (via count=exact)."""
-    settings = get_settings()
-    url = f"{settings.supabase_url}/rest/v1/{SUPABASE_TABLE}"
+    url = _table_url(table)
     params = {
         "status": "eq.pending_review",
         "mathematically_verified": "eq.true",
@@ -223,7 +231,7 @@ def render_source_image(
     return page_image
 
 
-def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
+def render_question_card(row: dict, table: str, pdf_dir: str, poppler_path: str) -> None:
     row_id = row["id"]
     verified = bool(row.get("mathematically_verified"))
     confidence = float(row.get("confidence_score") or 0.0)
@@ -324,17 +332,17 @@ def render_question_card(row: dict, pdf_dir: str, poppler_path: str) -> None:
                     fields["embedding"] = get_embedding(
                         get_openai_client(), embed_text.strip(), get_settings().embedding_model
                     )
-                patch_question(row_id, fields)
+                patch_question(table, row_id, fields)
                 st.success("Approved and saved.")
                 st.rerun()
 
             if reject_clicked:
-                patch_question(row_id, {"status": "rejected"})
+                patch_question(table, row_id, {"status": "rejected"})
                 st.warning("Marked as rejected.")
                 st.rerun()
 
             if delete_clicked:
-                delete_question(row_id)
+                delete_question(table, row_id)
                 st.warning("Deleted.")
                 st.rerun()
 
@@ -348,6 +356,12 @@ def main() -> None:
     except RuntimeError as exc:
         st.error(str(exc))
         st.stop()
+
+    st.sidebar.header("Table")
+    table = st.sidebar.selectbox("Table", KNOWN_TABLES, index=0)
+    if st.session_state.get("_active_table") != table:
+        st.session_state._active_table = table
+        st.session_state.offset = 0  # switching tables with a stale offset could skip/hide rows
 
     st.sidebar.header("Filters")
     status_filter = st.sidebar.multiselect(
@@ -367,7 +381,7 @@ def main() -> None:
 
     st.sidebar.divider()
     if st.sidebar.button("⚡ Bulk Approve High-Confidence", use_container_width=True):
-        count = bulk_approve_high_confidence()
+        count = bulk_approve_high_confidence(table)
         st.sidebar.success(f"Approved {count} question(s).")
         st.rerun()
 
@@ -376,6 +390,7 @@ def main() -> None:
     page_size = 15
 
     rows, total = fetch_questions(
+        table,
         status_filter,
         verified_filter,
         min_confidence,
@@ -402,7 +417,7 @@ def main() -> None:
         return
 
     for row in rows:
-        render_question_card(row, pdf_dir, poppler_path)
+        render_question_card(row, table, pdf_dir, poppler_path)
 
 
 if __name__ == "__main__":
