@@ -11,7 +11,7 @@ from openai import OpenAI
 
 from .box_detector import detect_question_boxes
 from .checkpoint import Checkpoint
-from .config import Settings
+from .config import SUPABASE_TABLE, Settings
 from .embeddings import get_embedding
 from .pdf_utils import iter_pdf_page_images, split_image_vertically
 from .schema import QudurateQuestion
@@ -97,8 +97,13 @@ def process_pdf(
     poppler_path: Optional[str] = None,
     dpi: int = 200,
     strips: int = 1,
+    table: str = SUPABASE_TABLE,
 ) -> None:
-    """Process a single PDF end to end, resuming from its checkpoint file if present."""
+    """Process a single PDF end to end, resuming from its checkpoint file if present.
+
+    `table` lets a different entrypoint script (e.g. for a different skill/section)
+    write into its own Supabase table instead of the default one.
+    """
     # Some local environments ship a Brotli decoder that is incompatible with
     # httpx's streaming decode call; requesting uncompressed responses avoids
     # that code path entirely rather than depending on a specific package.
@@ -181,7 +186,7 @@ def process_pdf(
                     for row in rows:
                         f.write(json.dumps(row, ensure_ascii=False) + "\n")
             elif rows:
-                insert_rows(settings, rows)
+                insert_rows(settings, rows, table=table)
 
             checkpoint.mark_done(page_number)
             total_questions += len(rows)
