@@ -5,9 +5,9 @@ create extension if not exists vector;
 create extension if not exists pgcrypto;
 
 drop function if exists match_qudurat_questions(vector, int, text);
-drop table if exists qudurat_quant_questions;
+drop table if exists "الجبر";
 
-create table qudurat_quant_questions (
+create table "الجبر" (
     id uuid primary key default gen_random_uuid(),
     source_page integer not null,
     source_pdf text not null default '',
@@ -37,19 +37,19 @@ insert into storage.buckets (id, name, public)
 values ('question-images', 'question-images', true)
 on conflict (id) do nothing;
 
-create index qudurat_quant_questions_embedding_idx
-    on qudurat_quant_questions
+create index "جبر_embedding_idx"
+    on "الجبر"
     using ivfflat (embedding vector_cosine_ops)
     with (lists = 100);
 
-create index qudurat_quant_questions_skill_idx
-    on qudurat_quant_questions (skill, sub_skill);
+create index "جبر_skill_idx"
+    on "الجبر" (skill, sub_skill);
 
-create index qudurat_quant_questions_status_idx
-    on qudurat_quant_questions (status, mathematically_verified, confidence_score);
+create index "جبر_status_idx"
+    on "الجبر" (status, mathematically_verified, confidence_score);
 
-create index qudurat_quant_questions_source_idx
-    on qudurat_quant_questions (source_pdf, source_page, box_index);
+create index "جبر_source_idx"
+    on "الجبر" (source_pdf, source_page, box_index);
 
 -- Keep updated_at current whenever the review dashboard edits a row.
 create or replace function set_updated_at()
@@ -62,8 +62,8 @@ begin
 end;
 $$;
 
-create trigger qudurat_quant_questions_set_updated_at
-    before update on qudurat_quant_questions
+create trigger "جبر_set_updated_at"
+    before update on "الجبر"
     for each row
     execute function set_updated_at();
 
@@ -110,7 +110,7 @@ as $$
         q.image_url,
         q.diagram_image_url,
         1 - (q.embedding <=> query_embedding) as similarity
-    from qudurat_quant_questions q
+    from "الجبر" q
     where q.status = 'approved'
         and (filter_skill is null or q.skill = filter_skill)
     order by q.embedding <=> query_embedding

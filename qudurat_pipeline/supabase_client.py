@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def insert_rows(settings: Settings, rows: list[dict], table: str = SUPABASE_TABLE) -> None:
     """Insert one or more rows into the given Supabase table via the REST API.
 
-    `table` defaults to the standard qudurat_quant_questions table, but callers
+    `table` defaults to the standard "الجبر" table, but callers
     (e.g. a separate skill's entrypoint script) can pass a different table name
     — including a non-ASCII one, which is percent-encoded for the request URL.
     """

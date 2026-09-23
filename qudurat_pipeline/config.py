@@ -88,7 +88,7 @@ class Settings:
         )
 
 
-SUPABASE_TABLE = "qudurat_quant_questions"
+SUPABASE_TABLE = "الجبر"
 DEFAULT_DPI = 300
 CHECKPOINT_DIR = Path(".")
 PDF_DIR = Path("pdfs")

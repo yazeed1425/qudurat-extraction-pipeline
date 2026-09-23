@@ -5,7 +5,7 @@ into its own Supabase table.
 Identical pipeline/protocol as extract_pipeline.py (self-verification, box
 detection, Gemini vision — see qudurat_pipeline/vision_extractor.py), but a
 separate, dedicated script so this section's questions land in their own
-"الاسئلة المقالية" table instead of qudurat_quant_questions, and so
+"الاسئلة المقالية" table instead of الجبر, and so
 extract_pipeline.py itself never needs to change to support additional
 skills/sections. Each new skill that needs its own table gets a small script
 like this one; the shared logic all lives in qudurat_pipeline/.

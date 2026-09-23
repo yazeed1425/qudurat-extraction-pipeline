@@ -8,7 +8,7 @@ then PATCHes image_url onto that row. Safe to re-run — it only touches rows
 where image_url is still null.
 
 Usage:
-    python backfill_images.py --table qudurat_quant_questions --poppler-path "C:\\poppler\\Library\\bin"
+    python backfill_images.py --table الجبر --poppler-path "C:\\poppler\\Library\\bin"
     python backfill_images.py --table المقارنات --pdf-dir pdfs --poppler-path "poppler/Library/bin"
 """
 

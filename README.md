@@ -18,7 +18,7 @@ with a Streamlit dashboard for a human to review anything the model wasn't fully
    - Linux: `apt install poppler-utils`
 3. Copy `.env.example` to `.env` and fill in `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY`.
 4. Run `schema.sql` in the Supabase SQL Editor. It enables `pgvector` and (re)creates the
-   `qudurat_quant_questions` table — **note it drops the table first**, so back up any existing
+   `الجبر` table — **note it drops the table first**, so back up any existing
    data you care about before running it.
 
 ## Usage — extraction
@@ -81,11 +81,11 @@ on the next run.
 
 ## Adding another skill/section with its own table
 
-`extract_pipeline.py` always writes to `qudurat_quant_questions`. To extract a different
+`extract_pipeline.py` always writes to `الجبر`. To extract a different
 skill/section into its **own** Supabase table (e.g. `المقارنات`) instead of adding a flag to that
 script, add a small dedicated entrypoint the same way `extract_pipeline_المقارنات.py` does:
 
-1. Create the table in Supabase with the same columns as `qudurat_quant_questions` in `schema.sql`
+1. Create the table in Supabase with the same columns as `الجبر` in `schema.sql`
    (swap the table name; skip the `ivfflat` index if the embedding model's dimensions exceed 2000).
 2. Copy `extract_pipeline_المقارنات.py`, changing `SKILL`, `TABLE`, and `DEFAULT_PDF` at the top.
 
@@ -94,7 +94,7 @@ optional `table` parameter for exactly this — `extract_pipeline.py` itself nev
 
 ## Project layout
 
-- `extract_pipeline.py` — extraction CLI entrypoint (writes to `qudurat_quant_questions`).
+- `extract_pipeline.py` — extraction CLI entrypoint (writes to `الجبر`).
 - `extract_pipeline_المقارنات.py` — same pipeline, writes to the separate `المقارنات` table.
 - `extract_pipeline_هندسة.py` — same pipeline, writes to the separate `هندسة` table.
 - `extract_pipeline_الاحصاء والرسوم البيانية.py` — same pipeline, writes to the separate `الاحصاء والرسوم البيانية` table.
