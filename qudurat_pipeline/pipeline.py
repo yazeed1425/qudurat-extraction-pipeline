@@ -113,6 +113,7 @@ def process_pdf(
     model: str,
     dry_run: bool = False,
     max_pages: Optional[int] = None,
+    max_questions: Optional[int] = None,
     poppler_path: Optional[str] = None,
     dpi: int = 200,
     strips: int = 1,
@@ -122,6 +123,11 @@ def process_pdf(
 
     `table` lets a different entrypoint script (e.g. for a different skill/section)
     write into its own Supabase table instead of the default one.
+
+    `max_questions` stops the run once at least that many questions have been
+    saved, checked after each page (a page's questions are never split across
+    the limit, since they're saved as one batch and the checkpoint is marked
+    for the whole page).
     """
     # Some local environments ship a Brotli decoder that is incompatible with
     # httpx's streaming decode call; requesting uncompressed responses avoids
@@ -244,6 +250,10 @@ def process_pdf(
                 approved,
                 len(rows) - approved,
             )
+
+            if max_questions is not None and total_questions >= max_questions:
+                logger.info("Reached max_questions=%d, stopping", max_questions)
+                break
 
         except Exception:
             logger.exception(

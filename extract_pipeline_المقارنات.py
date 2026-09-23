@@ -48,6 +48,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--max-pages", type=int, default=None, help="Limit the number of pages processed.")
     parser.add_argument(
+        "--max-questions",
+        type=int,
+        default=None,
+        help="Stop once at least this many questions have been saved (checked after each page).",
+    )
+    parser.add_argument(
         "--poppler-path",
         type=str,
         default=None,
@@ -93,6 +99,7 @@ def main() -> int:
         model=model,
         dry_run=args.dry_run,
         max_pages=args.max_pages,
+        max_questions=args.max_questions,
         poppler_path=args.poppler_path,
         dpi=args.dpi,
         strips=args.strips,

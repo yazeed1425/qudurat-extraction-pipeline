@@ -24,7 +24,7 @@ from qudurat_pipeline.embeddings import get_embedding
 # Known tables this dashboard can browse. Add an entry here whenever a new
 # dedicated extract_pipeline_<skill>.py script starts writing to its own table
 # (see README's "Adding another skill/section with its own table" section).
-KNOWN_TABLES = [SUPABASE_TABLE, "المقارنات"]
+KNOWN_TABLES = [SUPABASE_TABLE, "المقارنات", "هندسة"]
 
 _LATEX_MARKERS = re.compile(
     r"\\(frac|sqrt|times|div|cdot|left|right|Rightarrow|rightarrow|approx|neq|text)\b|\^\{|_\{|\^-?\d"

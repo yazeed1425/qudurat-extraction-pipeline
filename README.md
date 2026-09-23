@@ -96,6 +96,7 @@ optional `table` parameter for exactly this — `extract_pipeline.py` itself nev
 
 - `extract_pipeline.py` — extraction CLI entrypoint (writes to `qudurat_quant_questions`).
 - `extract_pipeline_المقارنات.py` — same pipeline, writes to the separate `المقارنات` table.
+- `extract_pipeline_هندسة.py` — same pipeline, writes to the separate `هندسة` table.
 - `app.py` — Streamlit human-in-the-loop review dashboard.
 - `qudurat_pipeline/config.py` — env/settings loading.
 - `qudurat_pipeline/schema.py` — Pydantic model, status logic, and the JSON schema handed to the model.
